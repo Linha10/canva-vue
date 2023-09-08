@@ -21,8 +21,4 @@
   </el-dialog>
 </template>
 
-<script>
-export default {
-  props: {},
-};
-</script>
+<script></script>
