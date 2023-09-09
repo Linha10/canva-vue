@@ -45,6 +45,7 @@
           :visible.sync="dialogVisible"
           :width="isMobile ? '300px' : '580px'"
           center
+          lock-scroll
           appendToBody
         >
           <!-- 彈窗標題 -->
@@ -102,6 +103,7 @@ export default {
   },
   created() {
     this.isMobile = mobile({ featureDetect: true, tablet: true });
+    // console.log("screen", screen);
   },
   computed: {
     /**

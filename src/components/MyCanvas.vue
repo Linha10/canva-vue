@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="test">
     <!-- 簽名區 -->
     <div
       class="canvas-outer"
@@ -7,7 +7,7 @@
     >
       <!-- 簽名畫布 -->
       <canvas
-        class="canvas-inner"
+        :class="['canvas-inner', { rotateCanvas: isMobile }]"
         ref="canvas"
         @mousedown="onCanvasMouseDown"
         @mouseup="onCanvasMouseUp"
@@ -300,5 +300,8 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-top: 10px;
+}
+.rotateCanvas {
+  transform: rotate(90deg);
 }
 </style>
