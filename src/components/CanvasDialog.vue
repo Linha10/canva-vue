@@ -10,7 +10,7 @@
       <div class="signDialog__label">編輯我的簽名</div>
     </template>
     <template>
-      <MyCanvas :width="525" :height="210" />
+      <MyCanvas />
     </template>
     <div slot="footer">
       <el-button @click="dialogVisible = false">取 消</el-button>

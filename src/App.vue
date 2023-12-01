@@ -112,14 +112,6 @@ export default {
     isSignatureImgEmpty() {
       return isEmpty(this.signatureImg);
     },
-    /**
-     * 桌機 & 手機版 canvas畫布設定
-     */
-    canvasSetting() {
-      return this.isMobile
-        ? { width: 245, height: 200 }
-        : { width: 525, height: 210 };
-    },
   },
   methods: {
     /**

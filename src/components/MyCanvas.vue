@@ -1,116 +1,119 @@
 <template>
   <div class="test">
-    <!-- 簽名區 -->
-    <div
-      class="canvas-outer"
-      :style="{ height: `${isMobile ? '204px' : '214px'}` }"
-    >
-      <!-- 簽名畫布 -->
-      <canvas
-        :class="['canvas-inner', { rotateCanvas: isMobile }]"
-        ref="canvas"
-        @mousedown="onCanvasMouseDown"
-        @mouseup="onCanvasMouseUp"
-        @touchstart="onCanvasMouseDown"
-        @touchmove="touchmove"
-      ></canvas>
-    </div>
-    <!-- 工具列 -->
-    <div class="toolBox">
-      <!-- 重置畫布鈕 -->
-      <el-tooltip effect="dark" content="重新簽名" placement="top">
-        <el-button
-          type="danger"
-          icon="el-icon-refresh"
-          circle
-          @click="resetCanvas"
-          size="mini"
-        ></el-button>
-      </el-tooltip>
-      <!-- 線條顏色工具 -->
-      <div>
-        <el-tooltip
-          effect="dark"
-          content="線條顏色"
-          placement="top"
-          v-if="!isMobile"
-        >
-          <el-radio-group
-            v-model="currentPenColor"
+    <div class="actionsWrap">
+      <!-- 簽名區 -->
+      <div
+        class="canvas-outer"
+        :style="{ height: `${isMobile ? '204px' : '214px'}` }"
+      >
+        <!-- 簽名畫布 -->
+        <canvas
+          :class="['canvas-inner', { rotateCanvas: isMobile }]"
+          ref="canvas"
+          @mousedown="onCanvasMouseDown"
+          @mouseup="onCanvasMouseUp"
+          @touchstart="onCanvasMouseDown"
+          @touchmove="touchmove"
+        ></canvas>
+      </div>
+      <!-- 工具列 -->
+      <div class="actions">
+        <!-- 重置畫布鈕 -->
+        <el-tooltip effect="dark" content="重新簽名" placement="top">
+          <el-button
+            type="danger"
+            icon="el-icon-refresh"
+            circle
+            @click="resetCanvas"
             size="mini"
-            :fill="`${currentPenColor}`"
-          >
-            <!-- 顏色選擇鈕 -->
-            <el-radio-button
-              v-for="item in penColors"
-              :key="item.color"
-              :label="item.color"
-              :style="{ color: item.color }"
-              >{{ item.name }}</el-radio-button
-            >
-          </el-radio-group>
+          ></el-button>
         </el-tooltip>
+        <!-- 線條顏色工具 -->
+        <div>
+          <el-tooltip
+            effect="dark"
+            content="線條顏色"
+            placement="top"
+            v-if="!isMobile"
+          >
+            <el-radio-group
+              v-model="currentPenColor"
+              size="mini"
+              :fill="`${currentPenColor}`"
+            >
+              <!-- 顏色選擇鈕 -->
+              <el-radio-button
+                v-for="item in penColors"
+                :key="item.color"
+                :label="item.color"
+                :style="{ color: item.color }"
+                >{{ item.name }}</el-radio-button
+              >
+            </el-radio-group>
+          </el-tooltip>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import mobile from "is-mobile";
 import { isEmpty } from "lodash";
 export default {
+  name: "BpmSignature",
   props: {
-    // 畫布寬度
-    width: {
-      default: 300,
-      type: [Number, String],
+    customOptions: {
+      default: () => ({}),
+      type: Object,
     },
-    // 畫布高度
-    height: {
-      default: 200,
-      type: Number,
+    isMobile: {
+      default: false,
+      type: Boolean,
     },
   },
   data() {
     return {
-      // 是否為行動裝置
-      isMobile: false,
+      canvas: null,
       // 畫布資料
       canvasContext: null,
       // 畫布背景色
       backgroundColor: "lightgoldenrodyellow",
       // 當前線條色
       currentPenColor: null,
-      // 線條顏色列表
-      penColors: [
-        { name: "Black", color: "black" },
-        { name: "Lightgreen", color: "#9BFFCD" },
-        { name: "Bpm-purple", color: "#822FEB" },
-        { name: "Red", color: "red" },
-      ],
       // 起始位置
       pointer: { x: 0, y: 0 },
       // 壓著滑鼠左鍵
       isCanvasMouseDown: false,
       // 畫布原點
       coordinateOrigin: { x: null, y: null },
+      isDrawing: false,
     };
-  },
-  created() {
-    this.isMobile = mobile({ featureDetect: true, tablet: true });
-  },
-  mounted() {
-    this.initCanvas();
   },
   computed: {
     getCoordinateOrigin() {
       const canvasPosition = this.canvasContext.canvas.getBoundingClientRect();
       return { x: canvasPosition.x, y: canvasPosition.y };
     },
-    // 線條粗度
+    // TODO 線條粗度
     currentSize() {
       return this.isMobile ? "1" : "3";
     },
+    canvasOptions() {
+      return {
+        width: this.isMobile ? 309 : 734,
+        height: this.isMobile ? 158 : 254,
+        ...this.customOptions,
+      };
+    },
+    getCanvasSize() {
+      return {
+        width: this.isMobile ? 309 : 734,
+        height: this.isMobile ? 158 : 254,
+      };
+    },
+  },
+  mounted() {
+    this.initCanvas();
   },
   methods: {
     /**
@@ -118,22 +121,28 @@ export default {
      */
     initCanvas() {
       this.setCanvas();
-      this.currentPenColor = this.penColors[0].color;
+      this.currentPenColor = "black";
       this.setWindowEvent();
     },
     /**
      * 建立canvas畫布
      */
     setCanvas() {
-      const canvas = this.$refs.canvas;
-      // 寬高隨意
-      [canvas.width, canvas.height] = [this.width, this.height];
+      const canvas = this.$refs.canvas || document.querySelector("canvas");
+      // 寬高設定
+      [canvas.width, canvas.height] = [
+        this.canvasOptions.width,
+        this.canvasOptions.height,
+      ];
+
       const ctx = canvas.getContext("2d");
       // 圓形筆頭
       ctx.lineCap = "round";
       // 轉角連接圓化
       ctx.linJoin = "round";
       this.canvasContext = ctx;
+
+      this.canvas = canvas;
     },
     /**
      * 監聽滑鼠移動事件
@@ -144,6 +153,8 @@ export default {
 
     /**
      * 取得滑鼠位置
+     *
+     * @param {object} event 事件
      */
     handleTrackingMouse(event) {
       let currentPosition = this.getAbsolutePosition(event);
@@ -159,10 +170,10 @@ export default {
 
           // 超出畫布時 停止動作
           if (
-            this.pointer.x > this.width ||
+            this.pointer.x > this.canvasOptions.width ||
             this.pointer.x < 0 ||
-            this.pointer.y > this.height ||
-            this.pointer < 0
+            this.pointer.y > this.canvasOptions.height ||
+            this.pointer.y < 0
           )
             this.onCanvasMouseUp();
         });
@@ -181,9 +192,9 @@ export default {
 
     /**
      * 已畫布左上角為(0, 0),取得當前指標相對畫布座標
-     * @param {object} event - 觸碰/點擊事件
      *
-     * @returns {Object}
+     * @param {object} event - 觸碰/點擊事件
+     * @returns {object}
      */
     getAbsolutePosition(event) {
       // 取得畫布起始座標
@@ -201,6 +212,9 @@ export default {
 
     /**
      * 取得手指位置
+     *
+     * @param {object} event 事件
+     * @returns {object | void}
      */
     getTouchPosition(event) {
       if (!isEmpty(event.targetTouches) && this.isMobile) {
@@ -216,23 +230,26 @@ export default {
      */
     draw(action) {
       let canvasContext = this.canvasContext;
+
       canvasContext.beginPath();
-      canvasContext.lineWidth = this.currentSize * 2;
+      canvasContext.lineWidth = this.currentSize * 1.5;
       action(canvasContext);
       canvasContext.stroke();
     },
-
+    /**
+     * 繪圖前執行動作
+     *
+     */
+    beforeMove() {
+      this.isDrawing = true;
+      !this.isMobile ? this.onCanvasMouseDown() : this.touchmove();
+    },
     /**
      * 點下滑鼠
+     *
      */
     onCanvasMouseDown() {
-      if (this.isMobile) {
-        let startPoint = this.getTouchPosition(event);
-        this.lastPtr = { x: startPoint?.x, y: startPoint?.y };
-        this.canvasContext.moveTo(startPoint?.x, startPoint?.y);
-      } else {
-        this.isCanvasMouseDown = true;
-      }
+      this.isCanvasMouseDown = true;
     },
 
     /**
@@ -245,13 +262,16 @@ export default {
     /**
      * 重置畫布
      */
-    resetCanvas() {
+    clearAll() {
       let canvas = this.canvasContext.canvas;
       this.canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+      this.isDrawing = false;
     },
 
     /**
      * 手指移動
+     *
+     * @param {object} event 點擊事件
      */
     touchmove(event) {
       const nextPosition = this.getTouchPosition(event);
@@ -271,12 +291,28 @@ export default {
 
     /**
      * 取得簽名圖檔
+     *
+     * @returns {object}
      */
-    getSignature() {
-      const signatureImg = this.$refs.canvas.toDataURL("image/png");
-      this.resetCanvas();
-      this.removeEventListener();
-      return { src: signatureImg };
+    getPngSignature() {
+      const isBlank = this.isCanvasBlank(this.canvas);
+      return isBlank ? "" : this.$refs.canvas.toDataURL("image/png");
+    },
+    /**
+     * 確認當前畫布是否為空
+     *
+     * @param {Element} canvas 畫布
+     * @returns {boolean}
+     */
+    isCanvasBlank(canvas) {
+      const context = canvas.getContext("2d");
+
+      const pixelBuffer = new Uint32Array(
+        context.getImageData(0, 0, canvas.width, canvas.height).data.buffer
+      );
+
+      // 如果u32返回為0 則為空白
+      return !pixelBuffer.some((item) => item !== 0);
     },
   },
 };
@@ -303,5 +339,16 @@ export default {
 }
 .rotateCanvas {
   transform: rotate(90deg);
+  .actionsWrap {
+    width: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .actions {
+    margin-right: 10px;
+    white-space: nowrap;
+    transform: rotate(90deg);
+  }
 }
 </style>
